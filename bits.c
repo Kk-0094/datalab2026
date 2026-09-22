@@ -19,8 +19,9 @@
  * Difficulty: 1
  */
 int bitAnd(int x, int y) {
-    return 2;
-}
+    int result;
+    result=~((~x)|(~y))
+    return result;
 
 /*
  * bitXor - x ^ y using only ~ and &
@@ -30,7 +31,9 @@ int bitAnd(int x, int y) {
  *   Difficulty: 1
  */
 int bitXor(int x, int y) {
-    return 2;
+    int result;
+    result=~((~x)&(~y))
+    return result;
 }
 
 /*
@@ -50,7 +53,14 @@ int bitXor(int x, int y) {
  *   1 if x and y have the same sign , 0 otherwise.
  */
 int samesign(int x, int y) {
-    return 2;
+    int result;
+    if((!!x)==0&&(!!y)==0) result=1;
+
+    else if((x>>31)==(y>>31)) result=1;
+
+    else result =0;
+
+    return result;
 }
 
 /*
@@ -63,7 +73,29 @@ int samesign(int x, int y) {
  *   Difficulty: 4
  */
 int logtwo(int v) {
-    return 2;
+    int result=0;
+
+    int b16=(v>>16)>0;
+    result=result|(b16<<4);
+    v=v>>(b16<<4);
+
+    int b8=(v>>8)>0;
+    result=result|(b8<<3);
+    v=v>>(b8<<3);
+
+    int b4=(v>>4)>0;
+    result=result|(b4<<2);
+    v=v>>(b4<<2);
+
+    int b2=(v>>2)>0;
+    result=result|(b8<<1);
+    v=v>>(b2<<1);
+
+    int b0=(v>>1)>0;
+    result=result|b0;
+    v=v>>b0;
+
+    return result;
 }
 
 /*
@@ -76,7 +108,13 @@ int logtwo(int v) {
  *    Difficulty: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+    int n_shift=n<<3;
+    int m_shift=m<<3;
+    int n_byte=(x>>n_shift)&0xFF;
+    int m_byte=(x>>m_shift)&0xFF;
+    x=x&~(0xFF<<n_shift)&~(0xFF<<m_shift);
+    x=x|(n_byte<<m_shift)|(m_byte<<n_shift)
+    return x;
 }
 
 /*
@@ -88,7 +126,17 @@ int byteSwap(int x, int n, int m) {
  *   Difficulty: 3
  */
 unsigned reverse(unsigned v) {
-    return 2;
+    v=((v>>1)&0x55555555)|((v&0x55555555)<<1);
+
+    v=((v>>2)&0x33333333)|((v&0x33333333)<<2);
+
+    v=((v>>4)&0x0F0F0F0F)|((v&0x0F0F0F0F)<<4);
+
+    v=((v>>8)&0x00FF00FF)|((v&0x00FF00FF)<<8);
+
+    v=((v>>16)&)|(v<<16);
+
+    return v;
 }
 
 /*
@@ -100,7 +148,9 @@ unsigned reverse(unsigned v) {
  *   Difficulty: 3
  */
 int logicalShift(int x, int n) {
-    return 2;
+    int mask=~(((1<<31)>>n)>>1)
+    x=(x>>n)&mask;
+    return x;
 }
 
 /*
@@ -112,7 +162,34 @@ int logicalShift(int x, int n) {
  *   Difficulty: 4
  */
 int leftBitCount(int x) {
-    return 2;
+    int count=0;
+    int check;
+
+    check=!((x>>16)+1);
+    count=count+(check<<4);
+    x=x<<(check<<4);
+
+    check=!((x>>24)+1);
+    count=count+(check<<3);
+    x=x<<(check<<3);
+
+    check=!((x>>28)+1);
+    count=count+(check<<2);
+    x=x<<(check<<2);
+
+    check=!((x>>30)+1);
+    count=count+(check<<1);
+    x=x<<(check<<1);
+
+    check=!((x>>31)+1);
+    count=count+(check);
+    x=x<<(check);
+
+    count=count+((x>>32)&1);
+
+    return count;
+
+
 }
 
 /*
@@ -157,6 +234,7 @@ unsigned floatScale2(unsigned uf) {
  */
 int float64_f2i(unsigned uf1, unsigned uf2) {
     return 2;
+
 }
 
 /*
