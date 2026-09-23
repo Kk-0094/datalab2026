@@ -113,7 +113,7 @@ int byteSwap(int x, int n, int m) {
     int n_byte=(x>>n_shift)&0xFF;
     int m_byte=(x>>m_shift)&0xFF;
     x=x&~(0xFF<<n_shift)&~(0xFF<<m_shift);
-    x=x|(n_byte<<m_shift)|(m_byte<<n_shift)
+    x=x|(n_byte<<m_shift)|(m_byte<<n_shift);
     return x;
 }
 
@@ -201,7 +201,65 @@ int leftBitCount(int x) {
  *   Difficulty: 4
  */
 unsigned float_i2f(int x) {
-    return 2;
+    if(x==0) return 0;
+
+    unsigned sign=0;
+    unsigned u=x;
+
+    if(x<0){
+        sign=1;
+        u=~u+1;
+    }
+
+    int res=0;
+    unsigned tmp=u;
+    if(tmp>>16){
+    res+=16;tmp>>=16;
+    }
+
+    if(tmp>>8){
+    res+=8;tmp>>=8;
+    }
+
+    if(tmp>>4){
+    res+=4;tmp>>=4;
+    }  
+
+    if(tmp>>2){
+    res+=2;tmp>>=2;
+    }  
+    
+    if(tmp>>1){
+    res+=1;tmp>>=1;
+    }          
+    
+    int exp=res+127;
+
+    unsigned frac;
+
+   if(e<=23)
+   {
+    frac=(u<<(23-e))&0x7FFFFF;
+   }else{
+    int shife=e-23;
+    frac=(u>>shift)&0x7FFFFF;
+    unsigned rest=u&((1<<shift)-1);
+    unsigned half=1<<(shift-1);
+
+    if(rest>half||(rest==half&&(frac&1)))
+    {
+        frac++;
+        if(frac==0x800000)
+        {
+            frac=0;
+            exp++:
+        }
+    }
+   }
+
+    unsigned result=(sign<<31)|(exp<<23)|frac;
+
+    return result;
 }
 
 /*
@@ -216,7 +274,29 @@ unsigned float_i2f(int x) {
  *   Difficulty: 4
  */
 unsigned floatScale2(unsigned uf) {
-    return 2;
+        unsigned sign=uf&0x80000000;
+        unsigned exp=(uf>>23)&0xFF;
+        unsigned frac=uf&0x7FFFFF;
+
+        if(exp==0xFF) return uf;
+        if(exp==0&&frac==0) return uf;
+
+        if(exp==0)
+        {
+            frac<<1;
+            if(frac&0x800000)
+            {
+                exp=1;
+                frac&=0x7FFFFF;
+            }
+        }else{
+            exp++:
+            if(exp==0xFF)
+            {
+                frac=0;
+            }
+        }
+        return sign|(exp<<23)|frac;
 }
 
 /*
@@ -233,7 +313,63 @@ unsigned floatScale2(unsigned uf) {
  *   Difficulty: 3
  */
 int float64_f2i(unsigned uf1, unsigned uf2) {
-    return 2;
+    unsigned sign=uf2>>31;
+    unsigned e=(uf2>>20)&0x7FF;
+    long long unsigned frac=((uf2&0xFFFFF)<<32)|uf1;
+
+    if(e==0x7FF)
+    {
+        return 0x80000000;
+    }
+
+    if(e==0)
+    {
+        return 0;
+    }
+
+    int E=(int)e-1023;
+
+    if(E<0)
+    {
+        return 0;
+    }
+
+   unsigned long long mantissa=(1ULL<<52)|frac;
+
+   unsigned long long value;
+   if(E>=52){
+    int shift=E-52;
+    if(shift>=32)
+    {
+        return 0x80000000;
+    }
+    value=mantissa<<shift;
+   }else{
+    int shift=52-E;
+    value=mantissa>>shift;
+   }
+
+   if(sign)
+   {
+    if(value>0x80000000ULL)
+    {
+        return 0x80000000;
+    }
+
+    if(value==0x80000000ULL)
+    {
+        return 0x80000000;
+    }
+
+    return -(int)value;
+   }else{
+    if(value>0x7FFFFFFFULL)
+    {
+        return 0x80000000;
+    }
+    return int(value);
+   }
+
 
 }
 
@@ -251,5 +387,25 @@ int float64_f2i(unsigned uf1, unsigned uf2) {
  *   Difficulty: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+
+    if(x>=128)
+    {
+        return 0x7F800000;
+    }
+
+    if(x>=-126)
+    {
+        unsigned exp=e+127;
+        return exp<<23;
+    }
+
+    if(x>=-149)
+    {
+        unsigned frac=1<<(x+149)
+       return frac;
+    }
+
+    return 0;
+
+
 }
