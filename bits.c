@@ -20,9 +20,9 @@
  */
 int bitAnd(int x, int y) {
     int result;
-    result=~((~x)|(~y))
+    result=~((~x)|(~y));
     return result;
-
+}
 /*
  * bitXor - x ^ y using only ~ and &
  *   Example: bitXor(4, 5) = 1
@@ -32,7 +32,7 @@ int bitAnd(int x, int y) {
  */
 int bitXor(int x, int y) {
     int result;
-    result=~((~x)&(~y))
+    result=(~(~x&~y))&(~(x&y));
     return result;
 }
 
@@ -53,14 +53,17 @@ int bitXor(int x, int y) {
  *   1 if x and y have the same sign , 0 otherwise.
  */
 int samesign(int x, int y) {
-    int result;
-    if((!!x)==0&&(!!y)==0) result=1;
-
-    else if((x>>31)==(y>>31)) result=1;
-
-    else result =0;
-
-    return result;
+    if(!x){
+        if(!y){
+            return 1;
+        }else{
+            return 0;   
+    }
+}
+    if(!y){
+        return 0;
+    }
+    return   !((x^y)>>31);
 }
 
 /*
@@ -75,23 +78,23 @@ int samesign(int x, int y) {
 int logtwo(int v) {
     int result=0;
 
-    int b16=(v>>16)>0;
+    int b16=v>0xFFFF;
     result=result|(b16<<4);
     v=v>>(b16<<4);
 
-    int b8=(v>>8)>0;
+    int b8=v>0xFF;
     result=result|(b8<<3);
     v=v>>(b8<<3);
 
-    int b4=(v>>4)>0;
+    int b4=v>0xF;
     result=result|(b4<<2);
     v=v>>(b4<<2);
 
-    int b2=(v>>2)>0;
-    result=result|(b8<<1);
+    int b2=v>0x3;
+    result=result|(b2<<1);
     v=v>>(b2<<1);
 
-    int b0=(v>>1)>0;
+    int b0=v>0x1;
     result=result|b0;
     v=v>>b0;
 
@@ -134,7 +137,7 @@ unsigned reverse(unsigned v) {
 
     v=((v>>8)&0x00FF00FF)|((v&0x00FF00FF)<<8);
 
-    v=((v>>16)&)|(v<<16);
+    v=(v>>16)|(v<<16);
 
     return v;
 }
@@ -148,7 +151,7 @@ unsigned reverse(unsigned v) {
  *   Difficulty: 3
  */
 int logicalShift(int x, int n) {
-    int mask=~(((1<<31)>>n)>>1)
+    int mask=~(((1<<31)>>n)<<1);
     x=(x>>n)&mask;
     return x;
 }
@@ -185,7 +188,7 @@ int leftBitCount(int x) {
     count=count+(check);
     x=x<<(check);
 
-    count=count+((x>>32)&1);
+    count=count+((x>>31)&1);
 
     return count;
 
@@ -201,67 +204,44 @@ int leftBitCount(int x) {
  *   Difficulty: 4
  */
 unsigned float_i2f(int x) {
-    if(x==0) return 0;
+    if (x == 0) return 0;
 
-    unsigned sign=0;
-    unsigned u=x;
+    unsigned sign = x & 0x80000000;
+    unsigned u = x;
+    if (sign) u = ~u + 1;
 
-    if(x<0){
-        sign=1;
-        u=~u+1;
+    int e = 31;
+    int t = u;
+    while (t > 0) {
+        t = t << 1;
+        e = e - 1;
     }
 
-    int res=0;
-    unsigned tmp=u;
-    if(tmp>>16){
-    res+=16;tmp>>=16;
-    }
+    unsigned exp = e + 127;
+    unsigned mantissa;
 
-    if(tmp>>8){
-    res+=8;tmp>>=8;
-    }
+    if (e < 24) {
+        mantissa = (u << (23 - e)) & 0x7FFFFF;
+    } else {
+        int shift = e - 23;
+        mantissa = (u >> shift) & 0x7FFFFF;
+        unsigned rest = u & ((1 << shift) - 1);
+        unsigned half = 1 << (shift - 1);
 
-    if(tmp>>4){
-    res+=4;tmp>>=4;
-    }  
+        if (rest > half) {
+            mantissa = mantissa + 1;
+        } else if (rest == half) {
+            if (mantissa & 1) mantissa = mantissa + 1;
+        }
 
-    if(tmp>>2){
-    res+=2;tmp>>=2;
-    }  
-    
-    if(tmp>>1){
-    res+=1;tmp>>=1;
-    }          
-    
-    int exp=res+127;
-
-    unsigned frac;
-
-   if(e<=23)
-   {
-    frac=(u<<(23-e))&0x7FFFFF;
-   }else{
-    int shife=e-23;
-    frac=(u>>shift)&0x7FFFFF;
-    unsigned rest=u&((1<<shift)-1);
-    unsigned half=1<<(shift-1);
-
-    if(rest>half||(rest==half&&(frac&1)))
-    {
-        frac++;
-        if(frac==0x800000)
-        {
-            frac=0;
-            exp++:
+        if (mantissa == 0x800000) {
+            mantissa = 0;
+            exp = exp + 1;
         }
     }
-   }
 
-    unsigned result=(sign<<31)|(exp<<23)|frac;
-
-    return result;
+    return sign | (exp << 23) | mantissa;
 }
-
 /*
  * floatScale2 - Return bit-level equivalent of expression 2*f for
  *   floating point argument f.
@@ -279,18 +259,19 @@ unsigned floatScale2(unsigned uf) {
         unsigned frac=uf&0x7FFFFF;
 
         if(exp==0xFF) return uf;
-        if(exp==0&&frac==0) return uf;
+        
 
         if(exp==0)
         {
-            frac<<1;
+            if(frac==0) return uf;
+            frac<<=1;
             if(frac&0x800000)
             {
                 exp=1;
                 frac&=0x7FFFFF;
             }
         }else{
-            exp++:
+            exp++;
             if(exp==0xFF)
             {
                 frac=0;
@@ -313,64 +294,33 @@ unsigned floatScale2(unsigned uf) {
  *   Difficulty: 3
  */
 int float64_f2i(unsigned uf1, unsigned uf2) {
-    unsigned sign=uf2>>31;
-    unsigned e=(uf2>>20)&0x7FF;
-    long long unsigned frac=((uf2&0xFFFFF)<<32)|uf1;
+    unsigned sign = uf2 >> 31;
+    unsigned e = (uf2 >> 20) & 0x7FF;
 
-    if(e==0x7FF)
-    {
-        return 0x80000000;
+    if (e >= 0x7FF) return 0x80000000;
+    if (e < 1023) return 0;
+
+    int E = e - 1023;
+    if (E >= 31) return 0x80000000;
+
+    unsigned h = uf2 & 0xFFFFF;
+    unsigned value;
+
+    if (E <= 20) {
+        value = (1 << E) | (h >> (20 - E));
+    } else {
+        value = (1 << E) | (h << (E - 20)) | (uf1 >> (52 - E));
     }
 
-    if(e==0)
-    {
-        return 0;
+    if (sign) {
+        if (value >= 0x80000000) return 0x80000000;
+        int result = value;
+        return -result;
+    } else {
+        if (value > 0x7FFFFFFF) return 0x80000000;
+        int result = value;
+        return result;
     }
-
-    int E=(int)e-1023;
-
-    if(E<0)
-    {
-        return 0;
-    }
-
-   unsigned long long mantissa=(1ULL<<52)|frac;
-
-   unsigned long long value;
-   if(E>=52){
-    int shift=E-52;
-    if(shift>=32)
-    {
-        return 0x80000000;
-    }
-    value=mantissa<<shift;
-   }else{
-    int shift=52-E;
-    value=mantissa>>shift;
-   }
-
-   if(sign)
-   {
-    if(value>0x80000000ULL)
-    {
-        return 0x80000000;
-    }
-
-    if(value==0x80000000ULL)
-    {
-        return 0x80000000;
-    }
-
-    return -(int)value;
-   }else{
-    if(value>0x7FFFFFFFULL)
-    {
-        return 0x80000000;
-    }
-    return int(value);
-   }
-
-
 }
 
 /*
@@ -395,13 +345,13 @@ unsigned floatPower2(int x) {
 
     if(x>=-126)
     {
-        unsigned exp=e+127;
+        unsigned exp=x+127;
         return exp<<23;
     }
 
     if(x>=-149)
     {
-        unsigned frac=1<<(x+149)
+        unsigned frac=1<<(x+149);
        return frac;
     }
 
